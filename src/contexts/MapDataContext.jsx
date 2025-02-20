@@ -74,7 +74,7 @@ export const MapDataProvider = ({ children }) => {
   const loadCSV = async (source) => {
     try {
       console.log(`Attempting to load CSV file: ${source.file}`);
-      const response = await fetch(`/data/${source.file}`);
+      const response = await fetch(`./data/${source.file}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
