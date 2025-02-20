@@ -151,7 +151,7 @@ export const MapDataProvider = ({ children }) => {
       // Load and filter GeoJSON for each area
       const geoJSONPromises = Object.entries(areaGroups).map(async ([areaCode, districts]) => {
         try {
-          const response = await fetch(`/geojson/${areaCode}.geojson`);
+          const response = await fetch(`./geojson/${areaCode}.geojson`);
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           const data = await response.json();
           
