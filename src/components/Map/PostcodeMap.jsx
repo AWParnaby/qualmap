@@ -11,84 +11,110 @@ import { useEffect } from 'react';
 const AccessibilityLayer = () => {
   const map = useMap();
   const { actions } = useMapData();
-  const { toggleAreaSelection, setFocusedArea } = actions;
+  const { setFocusedArea } = actions;
 
   useEffect(() => {
-    // Get all SVG paths representing postcode areas
-    const container = map.getContainer();
-    const paths = container.querySelectorAll('path');
-    
-    // Calculate centroids for each path to determine tab order
-    const pathsArray = Array.from(paths);
-    const pathData = pathsArray.map(path => {
-      const bounds = path.getBBox();
-      return {
-        element: path,
-        centroid: {
-          x: bounds.x + bounds.width / 2,
-          y: bounds.y + bounds.height / 2
-        }
-      };
-    });
-
-    // Sort paths by position (top to bottom, left to right)
-    const sortedPaths = pathData.sort((a, b) => {
-      const rowThreshold = 20; // pixels
-      const yDiff = a.centroid.y - b.centroid.y;
+    // Wait a brief moment for the map to fully render
+    const timer = setTimeout(() => {
+      const container = map.getContainer();
+      const paths = container.querySelectorAll('.leaflet-interactive');
       
-      // If paths are roughly in the same row, sort by x position
-      if (Math.abs(yDiff) < rowThreshold) {
-        return a.centroid.x - b.centroid.x;
-      }
-      return yDiff;
-    });
+      // Set accessibility attributes on all paths
+      paths.forEach(path => {
+        // Get the postcode from the feature data
+        const feature = path.__data?.feature;
+        if (feature?.properties?.name) {
+          const postcode = feature.properties.name;
+          path.setAttribute('data-postcode', postcode);
+          path.setAttribute('tabindex', '0');
+          path.setAttribute('role', 'button');
+          path.setAttribute('aria-label', `Postcode area ${postcode}`);
+        }
+      });
+    }, 100);
 
-    // Add keyboard navigation attributes to paths
-    sortedPaths.forEach((pathData, index) => {
-      const path = pathData.element;
-      path.setAttribute('tabindex', '0');
-      path.setAttribute('role', 'button');
-    });
+    return () => clearTimeout(timer);
+  }, [map]);
 
-    // Handle keyboard events for navigation and selection
+  useEffect(() => {
+    const container = map.getContainer();
+    
     const handleKeyDown = (e) => {
-      const path = e.target;
-      if (!path.matches('path')) return;
-
+      if (!document.activeElement?.matches('path')) return;
+      const path = document.activeElement;
       const postcode = path.getAttribute('data-postcode');
-      if (!postcode) return;
 
-      if (e.key === 'Enter' || e.key === ' ') {
-        // Toggle selection on Enter or Space
-        e.preventDefault();
-        toggleAreaSelection(postcode);
-      } else if (['w', 'a', 's', 'd'].includes(e.key.toLowerCase())) {
-        // WASD navigation between areas
-        e.preventDefault();
-        const paths = Array.from(container.querySelectorAll('path'));
-        const currentIndex = paths.indexOf(path);
-        let nextIndex = currentIndex;
+      if (!postcode) {
+        console.log('No postcode found for path:', path);
+        return;
+      }
 
-        // Calculate next index based on key pressed
-        switch (e.key.toLowerCase()) {
-          case 'w': nextIndex = Math.max(0, currentIndex - 1); break;
-          case 's': nextIndex = Math.min(paths.length - 1, currentIndex + 1); break;
-          case 'a': nextIndex = Math.max(0, currentIndex - 5); break;
-          case 'd': nextIndex = Math.min(paths.length - 1, currentIndex + 5); break;
-        }
-
-        // Focus next path and update focused area
-        const nextPath = paths[nextIndex];
-        if (nextPath) {
-          nextPath.focus();
-          setFocusedArea(nextPath.getAttribute('data-postcode'));
-        }
+      switch (e.key.toLowerCase()) {
+        case 'w':
+          e.preventDefault();
+          const upPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
+          const currentY = path.getBBox().y;
+          const upPath = upPaths
+            .filter(p => p.getBBox().y < currentY)
+            .sort((a, b) => b.getBBox().y - a.getBBox().y)[0];
+          if (upPath) {
+            upPath.focus();
+            setFocusedArea(upPath.getAttribute('data-postcode'));
+          }
+          break;
+        
+        case 's':
+          e.preventDefault();
+          const downPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
+          const currentDownY = path.getBBox().y;
+          const downPath = downPaths
+            .filter(p => p.getBBox().y > currentDownY)
+            .sort((a, b) => a.getBBox().y - b.getBBox().y)[0];
+          if (downPath) {
+            downPath.focus();
+            setFocusedArea(downPath.getAttribute('data-postcode'));
+          }
+          break;
+        
+        case 'a':
+          e.preventDefault();
+          const leftPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
+          const currentX = path.getBBox().x;
+          const currentLeftY = path.getBBox().y;
+          const leftPath = leftPaths
+            .filter(p => {
+              const bbox = p.getBBox();
+              return bbox.x < currentX && Math.abs(bbox.y - currentLeftY) < 20;
+            })
+            .sort((a, b) => b.getBBox().x - a.getBBox().x)[0];
+          if (leftPath) {
+            leftPath.focus();
+            setFocusedArea(leftPath.getAttribute('data-postcode'));
+          }
+          break;
+        
+        case 'd':
+          e.preventDefault();
+          const rightPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
+          const currentRightX = path.getBBox().x;
+          const currentRightY = path.getBBox().y;
+          const rightPath = rightPaths
+            .filter(p => {
+              const bbox = p.getBBox();
+              return bbox.x > currentRightX && Math.abs(bbox.y - currentRightY) < 20;
+            })
+            .sort((a, b) => a.getBBox().x - b.getBBox().x)[0];
+          if (rightPath) {
+            rightPath.focus();
+            setFocusedArea(rightPath.getAttribute('data-postcode'));
+          }
+          break;
       }
     };
 
-    container.addEventListener('keydown', handleKeyDown);
-    return () => container.removeEventListener('keydown', handleKeyDown);
-  }, [map, toggleAreaSelection, setFocusedArea]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [map, setFocusedArea]);
 
   return null;
 };
@@ -96,14 +122,18 @@ const AccessibilityLayer = () => {
 const PostcodeMap = () => {
   const { state, actions } = useMapData();
   const { postcodeGeoJSON, selectedAreas, focusedArea } = state;
-  const { toggleAreaSelection } = actions;
+  const { toggleAreaSelection, setFocusedArea } = actions;
 
-  if (!postcodeGeoJSON) {
-    return <div>Loading map data...</div>;
-  }
+  // Default bounds for UK if GeoJSON is empty
+  const defaultBounds = L.latLngBounds(
+    [49.8, -8.5], // Southwest corner
+    [59, 2]       // Northeast corner
+  );
 
   // Calculate map bounds with padding
-  const bounds = L.geoJSON(postcodeGeoJSON).getBounds();
+  const bounds = postcodeGeoJSON?.features?.length > 0
+    ? L.geoJSON(postcodeGeoJSON).getBounds()
+    : defaultBounds;
   const paddedBounds = bounds.pad(0.1);
 
   const handleClick = (feature) => {
@@ -111,52 +141,58 @@ const PostcodeMap = () => {
     toggleAreaSelection(name);
   };
 
+  useEffect(() => {
+    // Add accessibility attributes after the map renders
+    const paths = document.querySelectorAll('.leaflet-interactive');
+    paths.forEach(path => {
+      path.setAttribute('tabindex', '0');
+      path.setAttribute('role', 'button');
+    });
+  }, [postcodeGeoJSON]);
+
   return (
     <MapContainer
       bounds={paddedBounds}
       minZoom={5}
       maxZoom={10}
-      maxBounds={[[49.8, -8.5], [59, 2]]} // Limit to UK bounds
+      maxBounds={[[49.8, -8.5], [59, 2]]}
       maxBoundsViscosity={1.0}
     >
-      <AccessibilityLayer />
-      {/* OpenStreetMap tile layer */}
-      <TileLayer 
+      <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        bounds={[[49.8, -8.5], [59, 2]]}
-        noWrap={true}
-        minZoom={5}
-        maxZoom={10}
       />
-      {/* Postcode area overlay */}
       <GeoJSON 
         data={postcodeGeoJSON}
-        style={(feature) => {
-          const name = feature.properties.name;
-          const isSelected = selectedAreas.includes(name);
-          const isFocused = focusedArea === name;
-          
-          return {
-            fillColor: isSelected ? '#1d70b8' : '#b1d7ff',
-            fillOpacity: isSelected ? 0.6 : 0.3,
-            weight: isFocused ? 4 : 2,
-            color: isFocused ? '#ffdd00' : '#1d70b8',
-            dashArray: isFocused ? '5, 5' : null
-          };
-        }}
+        style={(feature) => ({
+          fillColor: selectedAreas.includes(feature.properties.name) ? '#1d70b8' : '#b1d7ff',
+          fillOpacity: selectedAreas.includes(feature.properties.name) ? 0.6 : 0.3,
+          weight: focusedArea === feature.properties.name ? 4 : 2,
+          color: focusedArea === feature.properties.name ? '#ffdd00' : '#1d70b8',
+          dashArray: focusedArea === feature.properties.name ? '5, 5' : null
+        })}
         onEachFeature={(feature, layer) => {
-          // Add accessibility attributes to each postcode area
-          const container = layer.getElement?.();
-          if (container) {
-            container.setAttribute('data-postcode', feature.properties.name);
-            container.setAttribute('aria-label', `Postcode area ${feature.properties.name}`);
-          }
+          // Add click handler
           layer.on({
             click: () => handleClick(feature)
           });
+
+          // Store postcode in the layer's options for later access
+          layer.options.postcode = feature.properties.name;
+          
+          // Add accessibility attributes when the layer is added
+          layer.on('add', () => {
+            const element = layer.getElement();
+            if (element) {
+              element.setAttribute('data-postcode', feature.properties.name);
+              element.setAttribute('tabindex', '0');
+              element.setAttribute('role', 'button');
+              element.setAttribute('aria-label', `Postcode area ${feature.properties.name}`);
+            }
+          });
         }}
       />
+      <AccessibilityLayer />
     </MapContainer>
   );
 };
