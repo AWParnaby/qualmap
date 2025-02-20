@@ -1,6 +1,7 @@
 import { useMapData } from '../../contexts/MapDataContext';
 import { TagCloud } from 'react-tagcloud';
 import { theme, colorPalettes } from '../../theme';
+import nlp from 'compromise';
 
 // Configuration for different data sources that will be visualized as word clouds
 const DATA_SOURCES = [
@@ -58,8 +59,7 @@ const WordCloudPanel = () => {
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
-      gap: theme.spacing.lg,
-      padding: theme.spacing.md
+      gap: theme.spacing.lg
     }}>
       {wordClouds.map(({ title, words }) => (
         <div key={title} style={{
@@ -71,37 +71,36 @@ const WordCloudPanel = () => {
             margin: 0,
             marginBottom: theme.spacing.sm,
             color: theme.colors.text,
-            fontWeight: theme.typography.weights.medium,
-            padding: `0 ${theme.spacing.md}`
+            fontWeight: theme.typography.weights.medium
           }}>
             {title}
           </h3>
           <div style={{
-            minHeight: '200px',
             border: `${theme.borders.width.thin} solid ${theme.colors.border}`,
             borderRadius: theme.borders.radius.md,
-            backgroundColor: theme.colors.surface
+            backgroundColor: theme.colors.surface,
+            minHeight: '250px'
           }}>
             {words && words.length > 0 ? (
               <TagCloud
                 minSize={14}
                 maxSize={36}
                 tags={words}
-                colorOptions={{}} // Disable random colors
+                colorOptions={{}}
                 style={{
                   padding: theme.spacing.md,
                   display: 'flex',
                   flexWrap: 'wrap',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  minHeight: '200px'
+                  minHeight: '250px'
                 }}
                 className="tag-cloud"
                 onClick={tag => console.log('clicking on tag:', tag)}
               />
             ) : (
               <div style={{
-                height: '200px',
+                height: '250px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -121,60 +120,76 @@ const WordCloudPanel = () => {
 // Process text data to generate word cloud data
 const generateWordCloud = (source, dataState, selectedAreas) => {
   const data = dataState[source.stateKey];
-  console.log('First item in data:', data[0]);
-  console.log('Available fields:', data[0] ? Object.keys(data[0]) : 'No data');
   
   if (!data) {
     console.log('No data found for stateKey:', source.stateKey);
     return [];
   }
 
-  const filteredData = data.filter(item => {
-    console.log('Item structure:', item);
-    return selectedAreas.includes(item[source.postcodeField]);
-  });
-  
-  console.log('Filtered data for', source.title, ':', filteredData);
+  const filteredData = data.filter(item => 
+    selectedAreas.includes(item[source.postcodeField])
+  );
 
   // Get all text fields
-  const texts = filteredData.map(item => {
-    console.log('Item fields available:', Object.keys(item));
-    const text = item[source.textField];
-    console.log(`Text from field ${source.textField}:`, text);
-    return text;
+  const texts = filteredData
+    .map(item => item[source.textField])
+    .filter(text => text);
+
+  // Process n-grams with NLP
+  const phraseCount = {};
+  
+  texts.forEach(text => {
+    const doc = nlp(text);
+
+    // Extract meaningful phrases using NLP patterns
+    const phrases = [
+      // Noun phrases (e.g., "digital skills", "community support")
+      ...doc.match('#Adjective+ #Noun+').out('array'),
+      // Verb phrases (e.g., "providing support", "accessing services")
+      ...doc.match('#Verb #Noun+').out('array'),
+      // Organization names (e.g., "Citizens Advice", "Job Centre")
+      ...doc.organizations().out('array'),
+      // Topics (automatically detected subjects)
+      ...doc.topics().out('array')
+    ];
+
+    // Process and count phrases
+    phrases.forEach(phrase => {
+      const normalized = phrase.toLowerCase();
+      if (isSignificantPhrase(normalized)) {
+        // Weight phrases by type (you can adjust these weights)
+        const weight = phrase.includes(' ') ? 2 : 1;
+        phraseCount[normalized] = (phraseCount[normalized] || 0) + weight;
+      }
+    });
   });
-  console.log('Extracted texts:', texts);
 
-  // Combine all text and split into words
-  const combinedText = texts.filter(text => text).join(' ');
-  console.log('Combined text:', combinedText);
-
-  const words = combinedText
-    .toLowerCase()
-    .split(/\W+/)
-    .filter(word => 
-      word.length > 2 && 
-      !commonWords.includes(word)
-    );
-
-  console.log('Processed words:', words);
-
-  // Count word frequencies
-  const wordCount = {};
-  words.forEach(word => {
-    wordCount[word] = (wordCount[word] || 0) + 1;
-  });
-
-  console.log('Word counts:', wordCount);
-
-  // Convert to format needed by TagCloud
-  return Object.entries(wordCount)
-    .map(([value, count]) => ({
-      value,
-      count
-    }))
+  return Object.entries(phraseCount)
+    .map(([value, count]) => ({ value, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 50);
+};
+
+// Helper function to determine if a phrase is significant
+const isSignificantPhrase = (phrase) => {
+  const doc = nlp(phrase);
+  
+  // More sophisticated validation using NLP
+  return (
+    // Must contain at least one significant term
+    !commonWords.includes(phrase) &&
+    // Check for valid grammatical structures
+    (
+      // Valid noun phrase
+      doc.match('#Adjective+ #Noun+').found ||
+      // Valid verb phrase
+      doc.match('#Verb #Noun+').found ||
+      // Is an organization name
+      doc.organizations().found ||
+      // Is a known topic
+      doc.topics().found
+    )
+  );
 };
 
 // Common English words to exclude from word clouds

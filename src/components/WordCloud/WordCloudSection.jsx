@@ -29,19 +29,16 @@ const WordCloudSection = () => {
       </div>
       <div style={{ 
         flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: theme.spacing.md,
-        overflow: 'auto'
+        overflowY: 'auto',
+        padding: theme.spacing.md
       }}>
         {selectedAreas.length === 0 ? (
           <div style={{
             ...styleHelpers.panel.highlighted,
             padding: theme.spacing.md,
             maxWidth: '400px',
-            textAlign: 'center'
+            textAlign: 'center',
+            margin: '0 auto'
           }}>
             <p style={{ 
               margin: 0,
@@ -52,15 +49,7 @@ const WordCloudSection = () => {
             </p>
           </div>
         ) : (
-          <div style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <WordCloudPanel />
-          </div>
+          <WordCloudPanel />
         )}
       </div>
     </div>

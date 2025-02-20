@@ -46,7 +46,14 @@ export const COMMON_WORDS = [
   'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
   'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first',
   'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these',
-  'give', 'day', 'most', 'us'
+  'give', 'day', 'most', 'us',
+  'service', 'services',
+  'digital', 'online',
+  'help', 'helped', 'helping',
+  'need', 'needs', 'needed',
+  'use', 'used', 'using',
+  'provide', 'provides', 'provided',
+  'support', 'supports', 'supported',
 ];
 
 // Map feature styling with lighter colors
