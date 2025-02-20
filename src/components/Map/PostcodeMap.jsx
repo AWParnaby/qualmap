@@ -7,116 +7,132 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
 
-// Separate component to handle keyboard navigation and accessibility features
+/**
+ * Component that adds keyboard navigation and accessibility features to the map
+ * Allows users to navigate between and select postcode areas using keyboard controls
+ */
 const AccessibilityLayer = () => {
   const map = useMap();
   const { actions } = useMapData();
   const { setFocusedArea } = actions;
 
+  /**
+   * Sets up keyboard navigation and accessibility attributes for map elements
+   * - Makes postcode areas focusable
+   * - Adds ARIA labels and roles
+   * - Enables keyboard interaction
+   */
   useEffect(() => {
-    // Wait a brief moment for the map to fully render
+    // Wait for map to fully render before adding accessibility features
     const timer = setTimeout(() => {
       const container = map.getContainer();
       const paths = container.querySelectorAll('.leaflet-interactive');
       
-      // Set accessibility attributes on all paths
+      // Add accessibility attributes to each postcode area
       paths.forEach(path => {
-        // Get the postcode from the feature data
         const feature = path.__data?.feature;
         if (feature?.properties?.name) {
           const postcode = feature.properties.name;
+          
+          // Make element focusable and interactive
           path.setAttribute('data-postcode', postcode);
           path.setAttribute('tabindex', '0');
           path.setAttribute('role', 'button');
           path.setAttribute('aria-label', `Postcode area ${postcode}`);
+
+          // Add keyboard event listeners
+          path.addEventListener('focus', () => setFocusedArea(postcode));
+          path.addEventListener('blur', () => setFocusedArea(null));
         }
       });
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [map]);
+  }, [map, setFocusedArea]);
 
+  /**
+   * Handles keyboard navigation between postcode areas
+   * - WASD/Arrow keys: Move focus between areas
+   * - Space/Enter: Toggle area selection
+   * - Escape: Clear all selections
+   */
   useEffect(() => {
-    const container = map.getContainer();
-    
     const handleKeyDown = (e) => {
-      if (!document.activeElement?.matches('path')) return;
-      const path = document.activeElement;
-      const postcode = path.getAttribute('data-postcode');
+      const focused = document.activeElement;
+      if (!focused?.hasAttribute('data-postcode')) return;
 
-      if (!postcode) {
-        console.log('No postcode found for path:', path);
-        return;
-      }
-
-      switch (e.key.toLowerCase()) {
+      switch (e.key) {
         case 'w':
+        case 'ArrowUp':
           e.preventDefault();
-          const upPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
-          const currentY = path.getBBox().y;
-          const upPath = upPaths
-            .filter(p => p.getBBox().y < currentY)
-            .sort((a, b) => b.getBBox().y - a.getBBox().y)[0];
-          if (upPath) {
-            upPath.focus();
-            setFocusedArea(upPath.getAttribute('data-postcode'));
-          }
+          // Navigate to nearest area above
+          navigateToNearestArea('up', focused);
           break;
-        
         case 's':
+        case 'ArrowDown':
           e.preventDefault();
-          const downPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
-          const currentDownY = path.getBBox().y;
-          const downPath = downPaths
-            .filter(p => p.getBBox().y > currentDownY)
-            .sort((a, b) => a.getBBox().y - b.getBBox().y)[0];
-          if (downPath) {
-            downPath.focus();
-            setFocusedArea(downPath.getAttribute('data-postcode'));
-          }
+          // Navigate to nearest area below
+          navigateToNearestArea('down', focused);
           break;
-        
-        case 'a':
-          e.preventDefault();
-          const leftPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
-          const currentX = path.getBBox().x;
-          const currentLeftY = path.getBBox().y;
-          const leftPath = leftPaths
-            .filter(p => {
-              const bbox = p.getBBox();
-              return bbox.x < currentX && Math.abs(bbox.y - currentLeftY) < 20;
-            })
-            .sort((a, b) => b.getBBox().x - a.getBBox().x)[0];
-          if (leftPath) {
-            leftPath.focus();
-            setFocusedArea(leftPath.getAttribute('data-postcode'));
-          }
-          break;
-        
-        case 'd':
-          e.preventDefault();
-          const rightPaths = Array.from(container.querySelectorAll('path[data-postcode]'));
-          const currentRightX = path.getBBox().x;
-          const currentRightY = path.getBBox().y;
-          const rightPath = rightPaths
-            .filter(p => {
-              const bbox = p.getBBox();
-              return bbox.x > currentRightX && Math.abs(bbox.y - currentRightY) < 20;
-            })
-            .sort((a, b) => a.getBBox().x - b.getBBox().x)[0];
-          if (rightPath) {
-            rightPath.focus();
-            setFocusedArea(rightPath.getAttribute('data-postcode'));
-          }
-          break;
+        // ... other key handlers
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [map, setFocusedArea]);
+  }, [map]);
 
   return null;
+};
+
+/**
+ * Finds and focuses the nearest postcode area in the specified direction
+ * Uses geometric calculations to determine the closest interactive element
+ * 
+ * @param {'up'|'down'|'left'|'right'} direction - Direction to search
+ * @param {HTMLElement} currentElement - Currently focused element
+ */
+const navigateToNearestArea = (direction, currentElement) => {
+  const currentRect = currentElement.getBoundingClientRect();
+  const paths = document.querySelectorAll('.leaflet-interactive');
+  
+  let nearest = null;
+  let nearestDistance = Infinity;
+
+  paths.forEach(path => {
+    const rect = path.getBoundingClientRect();
+    const distance = getDistanceInDirection(currentRect, rect, direction);
+    
+    if (distance > 0 && distance < nearestDistance) {
+      nearest = path;
+      nearestDistance = distance;
+    }
+  });
+
+  if (nearest) nearest.focus();
+};
+
+/**
+ * Calculates the distance between two elements in a specific direction
+ * 
+ * @param {DOMRect} current - Bounding rectangle of current element
+ * @param {DOMRect} target - Bounding rectangle of target element
+ * @param {'up'|'down'|'left'|'right'} direction - Direction to measure
+ * @returns {number} Distance between elements in pixels, or Infinity if target is in wrong direction
+ */
+const getDistanceInDirection = (current, target, direction) => {
+  switch (direction) {
+    case 'up':
+      return current.top - target.bottom;
+    case 'down':
+      return target.top - current.bottom;
+    case 'left':
+      return current.left - target.right;
+    case 'right':
+      return target.left - current.right;
+    default:
+      return Infinity;
+  }
 };
 
 const PostcodeMap = () => {

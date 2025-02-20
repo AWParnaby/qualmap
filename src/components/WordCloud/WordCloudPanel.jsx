@@ -117,7 +117,18 @@ const WordCloudPanel = () => {
   );
 };
 
-// Process text data to generate word cloud data
+/**
+ * Generates word cloud data from text content
+ * 
+ * @param {Object} source - Configuration object for the data source
+ * @param {string} source.stateKey - Key to access data in dataState
+ * @param {string} source.postcodeField - Field name containing postcode
+ * @param {string} source.textField - Field name containing text to analyze
+ * @param {string} source.title - Display title for this word cloud
+ * @param {Object} dataState - Current application state containing text data
+ * @param {string[]} selectedAreas - Array of selected postcode areas
+ * @returns {Array<{value: string, count: number}>} Array of words/phrases with their frequencies
+ */
 const generateWordCloud = (source, dataState, selectedAreas) => {
   const data = dataState[source.stateKey];
   
@@ -153,11 +164,10 @@ const generateWordCloud = (source, dataState, selectedAreas) => {
       ...doc.topics().out('array')
     ];
 
-    // Process and count phrases
     phrases.forEach(phrase => {
       const normalized = phrase.toLowerCase();
       if (isSignificantPhrase(normalized)) {
-        // Weight phrases by type (you can adjust these weights)
+        // Weight multi-word phrases more heavily to emphasize meaningful combinations
         const weight = phrase.includes(' ') ? 2 : 1;
         phraseCount[normalized] = (phraseCount[normalized] || 0) + weight;
       }
@@ -167,27 +177,29 @@ const generateWordCloud = (source, dataState, selectedAreas) => {
   return Object.entries(phraseCount)
     .map(([value, count]) => ({ value, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 50);
+    .slice(0, 50); // Limit to top 50 most frequent phrases
 };
 
-// Helper function to determine if a phrase is significant
+/**
+ * Determines if a phrase is meaningful enough to include in the word cloud
+ * 
+ * @param {string} phrase - The phrase to evaluate
+ * @returns {boolean} True if the phrase should be included
+ */
 const isSignificantPhrase = (phrase) => {
   const doc = nlp(phrase);
   
-  // More sophisticated validation using NLP
+  // A phrase is considered significant if it:
+  // 1. Contains at least one meaningful term (not in commonWords)
+  // 2. Has a valid grammatical structure (noun phrase, verb phrase, etc.)
+  // 3. Is recognized as a named entity or topic
   return (
-    // Must contain at least one significant term
     !commonWords.includes(phrase) &&
-    // Check for valid grammatical structures
     (
-      // Valid noun phrase
-      doc.match('#Adjective+ #Noun+').found ||
-      // Valid verb phrase
-      doc.match('#Verb #Noun+').found ||
-      // Is an organization name
-      doc.organizations().found ||
-      // Is a known topic
-      doc.topics().found
+      doc.match('#Adjective+ #Noun+').found ||  // Valid noun phrase
+      doc.match('#Verb #Noun+').found ||        // Valid verb phrase
+      doc.organizations().found ||              // Organization name
+      doc.topics().found                        // Recognized topic
     )
   );
 };

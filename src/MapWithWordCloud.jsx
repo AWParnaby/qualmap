@@ -22,28 +22,42 @@ const MapWithWordCloud = () => {
     return <LoadingSpinner />;
   }
 
-  // Event handlers for resize functionality
+  /**
+   * Initializes drag operation for resizing panels
+   * Sets up event listeners and prevents text selection during resize
+   * 
+   * @param {React.MouseEvent} e - Mouse down event
+   */
   const handleMouseDown = (e) => {
     isDragging.current = true;
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    // Prevent text selection while dragging
     e.preventDefault();
   };
 
+  /**
+   * Handles panel resizing during mouse movement
+   * Enforces minimum and maximum widths to maintain usability
+   * 
+   * @param {MouseEvent} e - Mouse move event
+   */
   const handleMouseMove = (e) => {
     if (!isDragging.current) return;
     
     const newWidth = window.innerWidth - e.clientX;
-    // Enforce minimum and maximum widths for usability
+    // Minimum width ensures sidebar remains usable
     const minWidth = 300;
-    const maxWidth = window.innerWidth - 400; // Ensure map has at least 400px
+    // Maximum width ensures map remains visible
+    const maxWidth = window.innerWidth - 400;
     setSidebarWidth(Math.min(Math.max(newWidth, minWidth), maxWidth));
   };
 
+  /**
+   * Cleans up resize operation
+   * Removes event listeners and resets dragging state
+   */
   const handleMouseUp = () => {
     isDragging.current = false;
-    // Clean up event listeners
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   };
