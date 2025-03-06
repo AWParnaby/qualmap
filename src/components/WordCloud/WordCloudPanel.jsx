@@ -22,7 +22,7 @@ const DATA_SOURCES = [
 ];
 
 const WordCloudPanel = () => {
-  const { state } = useMapData();
+  const { state, actions } = useMapData();
   const { selectedAreas, dataState } = state;
 
   // Get colors from theme and set up color cycling
@@ -36,67 +36,83 @@ const WordCloudPanel = () => {
     return color;
   };
 
-  console.log('Selected Areas:', selectedAreas);
-  console.log('Data State:', dataState);
-
-  // Generate word clouds for each data source
-  const wordClouds = DATA_SOURCES.map(source => {
-    console.log('Processing source:', source);
-    const words = generateWordCloud(source, dataState, selectedAreas);
-    console.log('Generated words for', source.title, ':', words);
-    const coloredWords = words.map(word => ({
-      ...word,
-      color: getNextColor()
-    }));
-    return {
-      title: source.title,
-      words: coloredWords
-    };
+  // Handle click on a word in the cloud
+const handleWordClick = (tag, source) => {
+  console.log('Word clicked:', tag.value, 'Source:', source);
+  
+  const data = dataState[source.stateKey];
+  if (!data) {
+    console.error('No data found for source:', source.stateKey);
+    return;
+  }
+  
+  const matchingData = data.filter(item => {
+    const text = item[source.textField]?.toLowerCase() || '';
+    return text.includes(tag.value.toLowerCase());
   });
+  
+  console.log('Found matching data:', matchingData.length, 'items');
+  
+  const enrichedData = matchingData.map(item => ({
+    ...item,
+    sourceField: source.textField
+  }));
+  
+  actions.setSelectedNgram(tag.value);
+  actions.setNgramData(enrichedData);
+};
+
+// Generate word clouds for each data source
+const wordClouds = DATA_SOURCES.map(source => {
+  const words = generateWordCloud(source, dataState, selectedAreas);
+  const coloredWords = words.map(word => ({
+    ...word,
+    color: getNextColor()
+  }));
+  return {
+    title: source.title,
+    words: coloredWords,
+    source // Pass the source to use in click handler
+  };
+});
 
   return (
     <div style={{
-      width: '100%',
       display: 'flex',
       flexDirection: 'column',
       gap: theme.spacing.lg
     }}>
-      {wordClouds.map(({ title, words }) => (
+      {wordClouds.map(({ title, words, source }) => (
         <div key={title} style={{
-          display: 'flex',
-          flexDirection: 'column'
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.borders.radius.md,
+          padding: theme.spacing.md,
+          boxShadow: theme.shadows.sm
         }}>
           <h3 style={{
             fontSize: theme.typography.sizes.h3,
             margin: 0,
-            marginBottom: theme.spacing.sm,
-            color: theme.colors.text,
-            fontWeight: theme.typography.weights.medium
+            marginBottom: theme.spacing.md,
+            color: theme.colors.text
           }}>
             {title}
           </h3>
           <div style={{
-            border: `${theme.borders.width.thin} solid ${theme.colors.border}`,
-            borderRadius: theme.borders.radius.md,
-            backgroundColor: theme.colors.surface,
-            minHeight: '250px'
+            backgroundColor: theme.colors.background,
+            borderRadius: theme.borders.radius.sm,
+            padding: theme.spacing.md
           }}>
-            {words && words.length > 0 ? (
+            {words.length > 0 ? (
               <TagCloud
                 minSize={14}
                 maxSize={36}
                 tags={words}
-                colorOptions={{}}
+                onClick={(tag) => handleWordClick(tag, source)}
+                className="word-cloud"
                 style={{
                   padding: theme.spacing.md,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  minHeight: '250px'
+                  fontFamily: theme.typography.fontFamily
                 }}
-                className="tag-cloud"
-                onClick={tag => console.log('clicking on tag:', tag)}
               />
             ) : (
               <div style={{

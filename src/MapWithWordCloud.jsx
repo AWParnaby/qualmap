@@ -8,6 +8,7 @@ import SelectionPanel from './components/Selection/SelectionPanel';
 import TabNavigation from './components/TabNavigation';
 import KeyboardHelp from './components/KeyboardHelp/KeyboardHelp';
 import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
+import NgramDataPanel from './components/WordCloud/NgramDataPanel';
 import { theme } from './theme';
 
 const MapWithWordCloud = () => {
@@ -121,6 +122,7 @@ const MapWithWordCloud = () => {
         </div>
       </div>
       <KeyboardHelp />
+      <NgramDataPanel />
     </div>
   );
 };
