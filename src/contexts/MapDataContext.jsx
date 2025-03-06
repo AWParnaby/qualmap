@@ -13,7 +13,9 @@ const ActionTypes = {
   SET_FOCUSED_AREA: 'SET_FOCUSED_AREA',
   SET_DATA_LOADED: 'SET_DATA_LOADED',
   TOGGLE_KEYBOARD_HELP: 'TOGGLE_KEYBOARD_HELP',
-  SET_ACTIVE_TAB: 'SET_ACTIVE_TAB'
+  SET_ACTIVE_TAB: 'SET_ACTIVE_TAB',
+  SET_SELECTED_NGRAM: 'SET_SELECTED_NGRAM',
+  SET_NGRAM_DATA: 'SET_NGRAM_DATA',
 };
 
 // Initial state
@@ -24,7 +26,9 @@ const initialState = {
   focusedArea: null,
   dataLoaded: false,
   showKeyboardHelp: false,
-  activeTab: 'selections'
+  activeTab: 'selections',
+  selectedNgram: null,
+  ngramData: null,
 };
 
 // Reducer
@@ -57,6 +61,10 @@ const mapDataReducer = (state, action) => {
       return { ...state, showKeyboardHelp: !state.showKeyboardHelp };
     case ActionTypes.SET_ACTIVE_TAB:
       return { ...state, activeTab: action.payload };
+    case ActionTypes.SET_SELECTED_NGRAM:
+      return { ...state, selectedNgram: action.payload };
+    case ActionTypes.SET_NGRAM_DATA:
+      return { ...state, ngramData: action.payload };
     default:
       console.warn('Unknown action type:', action.type);
       return state;
@@ -260,6 +268,13 @@ export const MapDataProvider = ({ children }) => {
     },
     setActiveTab: (tabId) => {
       dispatch({ type: ActionTypes.SET_ACTIVE_TAB, payload: tabId });
+    },
+    setSelectedNgram: (ngram) => {
+      dispatch({ type: ActionTypes.SET_SELECTED_NGRAM, payload: ngram });
+    },
+    
+    setNgramData: (data) => {
+      dispatch({ type: ActionTypes.SET_NGRAM_DATA, payload: data });
     }
   };
 
