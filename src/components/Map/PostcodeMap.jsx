@@ -166,6 +166,9 @@ const PostcodeMap = () => {
     });
   }, [postcodeGeoJSON]);
 
+  // Detect mobile viewport for responsive touch targets
+  const isMobile = window.innerWidth < 768;
+
   return (
     <MapContainer
       bounds={paddedBounds}
@@ -178,15 +181,24 @@ const PostcodeMap = () => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <GeoJSON 
+      <GeoJSON
         data={postcodeGeoJSON}
-        style={(feature) => ({
-          fillColor: selectedAreas.includes(feature.properties.name) ? '#1d70b8' : '#b1d7ff',
-          fillOpacity: selectedAreas.includes(feature.properties.name) ? 0.6 : 0.3,
-          weight: focusedArea === feature.properties.name ? 4 : 2,
-          color: focusedArea === feature.properties.name ? '#ffdd00' : '#1d70b8',
-          dashArray: focusedArea === feature.properties.name ? '5, 5' : null
-        })}
+        style={(feature) => {
+          const isSelected = selectedAreas.includes(feature.properties.name);
+          const isFocused = focusedArea === feature.properties.name;
+
+          return {
+            fillColor: isSelected ? '#1d70b8' : '#b1d7ff',
+            fillOpacity: isSelected ? 0.6 : 0.3,
+            weight: isMobile
+              ? (isFocused ? 8 : 6)  // Larger on mobile for touch
+              : (isFocused ? 4 : 2), // Standard on desktop
+            color: isFocused ? '#ffdd00' : '#1d70b8',
+            dashArray: isFocused ? '5, 5' : null,
+            lineCap: 'round',
+            lineJoin: 'round'
+          };
+        }}
         onEachFeature={(feature, layer) => {
           // Add click handler
           layer.on({
@@ -204,6 +216,10 @@ const PostcodeMap = () => {
               element.setAttribute('tabindex', '0');
               element.setAttribute('role', 'button');
               element.setAttribute('aria-label', `Postcode area ${feature.properties.name}`);
+
+              // Ensure proper pointer events to prevent interception
+              element.style.pointerEvents = 'painted';
+              element.style.cursor = 'pointer';
             }
           });
         }}

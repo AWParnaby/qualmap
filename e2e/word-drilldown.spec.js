@@ -35,7 +35,7 @@ test.describe('Word Cloud Drilldown Workflow', () => {
     }
   });
 
-  test('shows "No words found" message when no areas selected', async ({ page }) => {
+  test('shows empty state message when no areas selected', async ({ page }) => {
     // Clear any selections first
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
@@ -47,11 +47,8 @@ test.describe('Word Cloud Drilldown Workflow', () => {
       await wordCloudButton.first().click();
       await page.waitForTimeout(1000);
 
-      // Should see "No words found" messages
-      const noWordsMessages = page.getByText('No words found in selected areas');
-      const count = await noWordsMessages.count();
-
-      expect(count).toBeGreaterThan(0);
+      // Should see the instruction message
+      await expect(page.getByText('Select postcode areas on the map to see a word cloud summary')).toBeVisible();
     }
   });
 
@@ -181,9 +178,9 @@ test.describe('Word Cloud Drilldown Workflow', () => {
       const initialWords = page.locator('[data-testid^="word-"]');
       const initialCount = await initialWords.count();
 
-      // Go back to map and select more areas
-      const mapButton = page.locator('button', { hasText: /Map|Selections/i }).first();
-      await mapButton.click();
+      // Go back to selections panel
+      const selectionsButton = page.locator('button', { hasText: /Selected Areas/i }).first();
+      await selectionsButton.click();
       await page.waitForTimeout(500);
 
       // Select another area

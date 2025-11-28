@@ -1,6 +1,6 @@
 // Main container component that manages the layout of the map and side panel
 // Implements a resizable split view with a draggable divider
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useMapData } from './contexts/MapDataContext';
 import PostcodeMap from './components/Map/PostcodeMap';
 import WordCloudSection from './components/WordCloud/WordCloudSection';
@@ -18,6 +18,15 @@ const MapWithWordCloud = () => {
   const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth / 3);
   // Track dragging state for resize operations
   const isDragging = useRef(false);
+  // Track mobile viewport for responsive layout
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Handle responsive layout on window resize
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!dataLoaded) {
     return <LoadingSpinner />;
@@ -64,18 +73,20 @@ const MapWithWordCloud = () => {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
+    <div style={{
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
       height: '100vh',
       backgroundColor: theme.colors.background,
       overflow: 'hidden',
       userSelect: isDragging.current ? 'none' : 'auto'
     }}>
       {/* Map container */}
-      <div style={{ 
-        flex: 1,
-        height: '100%',
-        minWidth: '400px'
+      <div style={{
+        flex: isMobile ? '0 0 50vh' : 1,
+        height: isMobile ? '50vh' : '100%',
+        minWidth: isMobile ? 'auto' : '400px',
+        position: 'relative'
       }}>
         <PostcodeMap />
       </div>
@@ -83,17 +94,17 @@ const MapWithWordCloud = () => {
       {/* Resizable divider with keyboard controls */}
       <div
         style={{
-          width: '8px',
-          height: '100%',
+          width: isMobile ? '100%' : '8px',
+          height: isMobile ? '8px' : '100%',
           backgroundColor: theme.colors.border,
-          cursor: 'col-resize',
+          cursor: isMobile ? 'ns-resize' : 'col-resize',
           transition: 'background-color 0.2s'
         }}
-        onMouseDown={handleMouseDown}
+        onMouseDown={isMobile ? undefined : handleMouseDown}
         role="separator"
         aria-label="Resize panels"
-        tabIndex={0}
-        onKeyDown={(e) => {
+        tabIndex={isMobile ? -1 : 0}
+        onKeyDown={isMobile ? undefined : (e) => {
           // Allow keyboard-based resizing with arrow keys
           if (e.key === 'ArrowLeft') {
             setSidebarWidth(prev => Math.min(prev + 50, window.innerWidth - 400));
@@ -104,13 +115,15 @@ const MapWithWordCloud = () => {
       />
 
       {/* Side panel with tabs for selections and word cloud */}
-      <div style={{ 
-        width: `${sidebarWidth}px`,
-        height: '100%',
-        borderLeft: `${theme.borders.width.thin} solid ${theme.colors.border}`,
+      <div style={{
+        width: isMobile ? '100%' : `${sidebarWidth}px`,
+        height: isMobile ? 'calc(50vh - 8px)' : '100%',
+        borderLeft: isMobile ? 'none' : `${theme.borders.width.thin} solid ${theme.colors.border}`,
+        borderTop: isMobile ? `${theme.borders.width.thin} solid ${theme.colors.border}` : 'none',
         display: 'flex',
         flexDirection: 'column',
-        minWidth: '300px'
+        minWidth: isMobile ? 'auto' : '300px',
+        backgroundColor: theme.colors.surface
       }}>
         <TabNavigation />
         <div style={{ 

@@ -76,6 +76,33 @@ button:focus-visible {
   height: 100%;
 }
 
+/* Prevent pointer event interception issues */
+.leaflet-interactive {
+  pointer-events: painted;
+  cursor: pointer;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Ensure focused elements appear on top */
+.leaflet-interactive:focus {
+  outline: 3px solid #ffdd00;
+  outline-offset: 2px;
+  position: relative;
+  z-index: 400;
+}
+
+/* Enhanced touch targets for mobile */
+@media (max-width: 768px) {
+  .leaflet-interactive {
+    stroke-width: 6px;
+  }
+
+  .leaflet-interactive:hover,
+  .leaflet-interactive:focus {
+    stroke-width: 8px;
+  }
+}
+
 .tag-cloud {
   padding: 16px;
   width: 100%;

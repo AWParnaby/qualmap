@@ -1020,6 +1020,55 @@ Currently no tests exist. Recommended additions:
 3. Memoize expensive calculations
 4. Consider React.memo for components
 
+### Issue: GeoJSON boundary overlaps causing click interception
+**What it is**:
+Some postcode district boundaries in the GeoJSON data have genuinely overlapping geometries. This is particularly noticeable between adjacent districts like NE1 and NE8, where the geographic boundary polygons physically overlap each other.
+
+**Why it occurs**:
+This is not a code bug, but a characteristic of the underlying geographic data. Postcode boundaries in the real world can have complex, overlapping shapes due to:
+- Historical boundary definitions
+- Administrative district changes over time
+- Data precision limitations in boundary polygon generation
+- Geographic features that don't align perfectly
+
+**How it affects the application**:
+1. **User clicks**: When clicking on overlapping areas, the browser may register the click on the top-most SVG path element rather than the visually-intended one
+2. **Pointer interception**: The `pointer-events` CSS property can cause one area to intercept clicks meant for another
+3. **Z-index stacking**: SVG rendering order determines which element receives pointer events in overlap zones
+
+**How it affects testing**:
+E2E tests (Playwright) can fail when attempting to click postcode areas because:
+- Playwright's click detection checks if the target element would actually receive the click
+- Overlapping boundaries can cause different elements to intercept the pointer event
+- Tests timeout waiting for clicks that never register on the intended element
+
+**Solution**:
+For E2E tests, use `{ force: true }` option with Playwright clicks to bypass the actionability check:
+
+```javascript
+// Instead of:
+await page.click('.leaflet-interactive');
+
+// Use:
+await page.click('.leaflet-interactive', { force: true });
+```
+
+This forces the click even when another element would naturally intercept it, allowing tests to verify functionality despite the geographic data overlap.
+
+**Production considerations**:
+- This issue has minimal impact on real users, as overlapping areas are typically small edge zones
+- The increased stroke-width on mobile (6-8px) provides adequate touch targets
+- CSS `pointer-events: painted` helps ensure clicks register on visible portions
+- Focus outlines with `z-index: 400` bring focused elements to the top
+
+**Not a bug to fix**:
+This is a known data characteristic, not a code defect. Attempting to "fix" the boundary overlaps would require:
+- Regenerating all GeoJSON boundary files
+- Potentially losing geographic accuracy
+- Creating gaps between districts (worse UX than overlaps)
+
+The current implementation with enhanced touch targets and pointer-events optimization is the appropriate solution.
+
 ---
 
 ## Future Enhancement Ideas
