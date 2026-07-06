@@ -1,6 +1,6 @@
 // Context provider for managing the application's global state
 // Handles map data, selections, and UI state
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 import Papa from 'papaparse';
 import { DATA_SOURCES } from '../config/constants';
 

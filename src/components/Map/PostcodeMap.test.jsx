@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PostcodeMap from './PostcodeMap';
+import PostcodeMap, { getDirectionForKey, getDistanceInDirection } from './PostcodeMap';
 import { renderWithContext } from '@test/utils/renderWithContext';
 
 // Mock react-leaflet before imports
@@ -14,7 +14,7 @@ vi.mock('react-leaflet', () => ({
   TileLayer: ({ url, attribution }) => (
     <div data-testid="tile-layer" data-url={url} data-attribution={attribution} />
   ),
-  GeoJSON: ({ data, onEachFeature, style, ...otherProps }) => {
+  GeoJSON: ({ data, onEachFeature }) => {
     // Simulate onEachFeature being called for each feature
     if (data && data.features && onEachFeature) {
       data.features.forEach(feature => {
@@ -63,12 +63,12 @@ vi.mock('leaflet', () => ({
     latLngBounds: vi.fn((sw, ne) => ({
       _southWest: sw,
       _northEast: ne,
-      pad: vi.fn(function(padding) {
+      pad: vi.fn(function() {
         return this;
       }),
       isValid: () => true
     })),
-    geoJSON: vi.fn((data) => ({
+    geoJSON: vi.fn(() => ({
       getBounds: vi.fn(() => ({
         _southWest: [49.8, -8.5],
         _northEast: [59, 2],
@@ -221,7 +221,7 @@ describe('PostcodeMap', () => {
   describe('Interactions', () => {
     it('toggles area selection on click', async () => {
       const user = userEvent.setup();
-      const { container } = renderWithContext(<PostcodeMap />);
+      renderWithContext(<PostcodeMap />);
 
       await waitFor(() => {
         expect(screen.getByTestId('geojson-layer')).toBeInTheDocument();
@@ -232,7 +232,6 @@ describe('PostcodeMap', () => {
       expect(features.length).toBeGreaterThan(0);
 
       const firstFeature = features[0];
-      const postcode = firstFeature.getAttribute('data-postcode');
 
       // Click the feature
       await user.click(firstFeature);
@@ -403,6 +402,63 @@ describe('PostcodeMap', () => {
 
       const features = screen.getAllByRole('button');
       expect(features.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getDirectionForKey', () => {
+    it('maps w and ArrowUp to up', () => {
+      expect(getDirectionForKey('w')).toBe('up');
+      expect(getDirectionForKey('ArrowUp')).toBe('up');
+    });
+
+    it('maps s and ArrowDown to down', () => {
+      expect(getDirectionForKey('s')).toBe('down');
+      expect(getDirectionForKey('ArrowDown')).toBe('down');
+    });
+
+    it('maps a and ArrowLeft to left', () => {
+      expect(getDirectionForKey('a')).toBe('left');
+      expect(getDirectionForKey('ArrowLeft')).toBe('left');
+    });
+
+    it('maps d and ArrowRight to right', () => {
+      expect(getDirectionForKey('d')).toBe('right');
+      expect(getDirectionForKey('ArrowRight')).toBe('right');
+    });
+
+    it('returns null for unrelated keys', () => {
+      expect(getDirectionForKey('Enter')).toBeNull();
+      expect(getDirectionForKey('q')).toBeNull();
+    });
+  });
+
+  describe('getDistanceInDirection', () => {
+    // current area sits at x:[100,200] y:[100,200]
+    const current = { top: 100, bottom: 200, left: 100, right: 200 };
+
+    it('finds a target above as positive distance up', () => {
+      const target = { top: 0, bottom: 50, left: 100, right: 200 };
+      expect(getDistanceInDirection(current, target, 'up')).toBe(50);
+    });
+
+    it('finds a target below as positive distance down', () => {
+      const target = { top: 250, bottom: 300, left: 100, right: 200 };
+      expect(getDistanceInDirection(current, target, 'down')).toBe(50);
+    });
+
+    it('finds a target to the left as positive distance left', () => {
+      const target = { top: 100, bottom: 200, left: 0, right: 50 };
+      expect(getDistanceInDirection(current, target, 'left')).toBe(50);
+    });
+
+    it('finds a target to the right as positive distance right', () => {
+      const target = { top: 100, bottom: 200, left: 250, right: 300 };
+      expect(getDistanceInDirection(current, target, 'right')).toBe(50);
+    });
+
+    it('returns Infinity for an unknown direction', () => {
+      const target = { top: 0, bottom: 50, left: 0, right: 50 };
+      expect(getDistanceInDirection(current, target, 'diagonal')).toBe(Infinity);
     });
   });
 

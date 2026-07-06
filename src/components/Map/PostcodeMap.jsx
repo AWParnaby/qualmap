@@ -2,7 +2,6 @@
 // Uses react-leaflet for map rendering and interaction
 import { useMapData } from '../../contexts/MapDataContext';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
-import { theme } from '../../theme';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
@@ -61,21 +60,11 @@ const AccessibilityLayer = () => {
       const focused = document.activeElement;
       if (!focused?.hasAttribute('data-postcode')) return;
 
-      switch (e.key) {
-        case 'w':
-        case 'ArrowUp':
-          e.preventDefault();
-          // Navigate to nearest area above
-          navigateToNearestArea('up', focused);
-          break;
-        case 's':
-        case 'ArrowDown':
-          e.preventDefault();
-          // Navigate to nearest area below
-          navigateToNearestArea('down', focused);
-          break;
-        // ... other key handlers
-      }
+      const direction = getDirectionForKey(e.key);
+      if (!direction) return;
+
+      e.preventDefault();
+      navigateToNearestArea(direction, focused);
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -83,6 +72,31 @@ const AccessibilityLayer = () => {
   }, [map]);
 
   return null;
+};
+
+/**
+ * Maps a WASD or arrow key to the navigation direction it represents
+ *
+ * @param {string} key - The `KeyboardEvent.key` value
+ * @returns {'up'|'down'|'left'|'right'|null} Direction, or null if the key isn't a navigation key
+ */
+export const getDirectionForKey = (key) => {
+  switch (key) {
+    case 'w':
+    case 'ArrowUp':
+      return 'up';
+    case 's':
+    case 'ArrowDown':
+      return 'down';
+    case 'a':
+    case 'ArrowLeft':
+      return 'left';
+    case 'd':
+    case 'ArrowRight':
+      return 'right';
+    default:
+      return null;
+  }
 };
 
 /**
@@ -120,7 +134,7 @@ const navigateToNearestArea = (direction, currentElement) => {
  * @param {'up'|'down'|'left'|'right'} direction - Direction to measure
  * @returns {number} Distance between elements in pixels, or Infinity if target is in wrong direction
  */
-const getDistanceInDirection = (current, target, direction) => {
+export const getDistanceInDirection = (current, target, direction) => {
   switch (direction) {
     case 'up':
       return current.top - target.bottom;
@@ -138,7 +152,7 @@ const getDistanceInDirection = (current, target, direction) => {
 const PostcodeMap = () => {
   const { state, actions } = useMapData();
   const { postcodeGeoJSON, selectedAreas, focusedArea } = state;
-  const { toggleAreaSelection, setFocusedArea } = actions;
+  const { toggleAreaSelection } = actions;
 
   // Default bounds for UK if GeoJSON is empty
   const defaultBounds = L.latLngBounds(

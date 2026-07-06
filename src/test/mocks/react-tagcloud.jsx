@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 // Mock TagCloud component from react-tagcloud
 // Preserves onClick handler and renders words for testing
 
-export const TagCloud = ({ tags, onClick, minSize, maxSize, ...props }) => (
+export const TagCloud = ({ tags, onClick, minSize, maxSize: _maxSize, ...props }) => (
   <div data-testid="tag-cloud" {...props}>
     {tags && tags.map((tag, idx) => (
       <span

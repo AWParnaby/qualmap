@@ -17,7 +17,7 @@ export const TileLayer = ({ url, attribution }) => (
   />
 );
 
-export const GeoJSON = ({ data, style, onEachFeature, ...props }) => {
+export const GeoJSON = ({ data, style: _style, onEachFeature, ...props }) => {
   // Simulate calling onEachFeature for each feature
   if (data && data.features && onEachFeature) {
     data.features.forEach(feature => {
