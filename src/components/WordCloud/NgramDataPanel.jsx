@@ -46,7 +46,7 @@ const NgramDataPanel = () => {
           fontSize: theme.typography.sizes.h3,
           color: theme.colors.text
         }}>
-          Sources containing "{selectedNgram}"
+          Sources containing &quot;{selectedNgram}&quot;
         </h3>
         <button
           onClick={() => {

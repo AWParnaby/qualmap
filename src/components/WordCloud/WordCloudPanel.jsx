@@ -27,14 +27,9 @@ const WordCloudPanel = () => {
 
   // Get colors from theme and set up color cycling
   const colors = colorPalettes.light.wordCloud;
-  let colorIndex = 0;
 
   // Cycle through available colors for words
-  const getNextColor = () => {
-    const color = colors[colorIndex];
-    colorIndex = (colorIndex + 1) % colors.length;
-    return color;
-  };
+  const getColorForIndex = (index) => colors[index % colors.length];
 
   // Handle click on a word in the cloud
 const handleWordClick = (tag, source) => {
@@ -62,12 +57,12 @@ const handleWordClick = (tag, source) => {
   actions.setNgramData(enrichedData);
 };
 
-// Generate word clouds for each data source
+// Generate word clouds for each data source, cycling colors within each source's words
 const wordClouds = DATA_SOURCES.map(source => {
   const words = generateWordCloud(source, dataState, selectedAreas);
-  const coloredWords = words.map(word => ({
+  const coloredWords = words.map((word, index) => ({
     ...word,
-    color: getNextColor()
+    color: getColorForIndex(index)
   }));
   return {
     title: source.title,

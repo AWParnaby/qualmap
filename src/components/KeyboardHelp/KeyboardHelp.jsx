@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useMapData } from '../../contexts/MapDataContext';
 import { theme, styleHelpers } from '../../theme';
 
@@ -48,7 +47,7 @@ const KeyboardHelp = () => {
             Use <kbd style={kbdStyle}>W</kbd> <kbd style={kbdStyle}>A</kbd> <kbd style={kbdStyle}>S</kbd> <kbd style={kbdStyle}>D</kbd> to navigate between postcode areas
           </li>
           <li style={{ marginBottom: theme.spacing.sm }}>
-            Press <kbd style={kbdStyle}>Space</kbd> or <kbd style={kbdStyle}>Enter</kbd> to toggle an area's selection
+            Press <kbd style={kbdStyle}>Space</kbd> or <kbd style={kbdStyle}>Enter</kbd> to toggle an area&apos;s selection
           </li>
           <li style={{ marginBottom: theme.spacing.sm }}>
             Press <kbd style={kbdStyle}>Escape</kbd> to clear all selections

@@ -25,6 +25,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:all": "npm run test:coverage && npm run test:e2e",
+    "lint": "eslint .",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
@@ -41,6 +42,7 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -52,7 +54,12 @@
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.14",
     "@vitest/ui": "^4.0.14",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
     "gh-pages": "^6.3.0",
+    "globals": "^17.7.0",
     "happy-dom": "^20.0.11",
     "msw": "^2.12.3",
     "vite": "^7.2.4",

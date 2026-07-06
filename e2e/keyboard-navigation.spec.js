@@ -135,11 +135,6 @@ test.describe('Keyboard Navigation', () => {
     }
 
     if (focused) {
-      // Get the currently focused postcode
-      const firstPostcode = await page.evaluate(() => {
-        return document.activeElement?.getAttribute('data-postcode');
-      });
-
       // Press arrow key to move to adjacent area
       await page.keyboard.press('ArrowDown');
       await page.waitForTimeout(300);
@@ -177,10 +172,6 @@ test.describe('Keyboard Navigation', () => {
     }
 
     if (focused) {
-      const firstPostcode = await page.evaluate(() => {
-        return document.activeElement?.getAttribute('data-postcode');
-      });
-
       // Press 's' to move down
       await page.keyboard.press('s');
       await page.waitForTimeout(300);

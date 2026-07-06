@@ -94,7 +94,7 @@ describe('SelectionPanel', () => {
   describe('With Selections', () => {
     it('shows selection count for single area', async () => {
       const TestComponent = () => {
-        const { actions, state } = useMapData();
+        const { actions } = useMapData();
 
         return (
           <div>

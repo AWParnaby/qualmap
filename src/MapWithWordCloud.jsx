@@ -1,6 +1,6 @@
 // Main container component that manages the layout of the map and side panel
 // Implements a resizable split view with a draggable divider
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMapData } from './contexts/MapDataContext';
 import PostcodeMap from './components/Map/PostcodeMap';
 import WordCloudSection from './components/WordCloud/WordCloudSection';
@@ -16,8 +16,11 @@ const MapWithWordCloud = () => {
   const { dataLoaded, activeTab } = state;
   // Initialize sidebar width to 1/3 of window width
   const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth / 3);
-  // Track dragging state for resize operations
+  // Track dragging state for resize operations. A ref drives the mousemove
+  // guard (so the listener always sees the latest value without re-binding),
+  // while the state copy drives rendering (e.g. the userSelect style below).
   const isDragging = useRef(false);
+  const [isDraggingForRender, setIsDraggingForRender] = useState(false);
   // Track mobile viewport for responsive layout
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -40,6 +43,7 @@ const MapWithWordCloud = () => {
    */
   const handleMouseDown = (e) => {
     isDragging.current = true;
+    setIsDraggingForRender(true);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     e.preventDefault();
@@ -68,6 +72,7 @@ const MapWithWordCloud = () => {
    */
   const handleMouseUp = () => {
     isDragging.current = false;
+    setIsDraggingForRender(false);
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   };
@@ -79,7 +84,7 @@ const MapWithWordCloud = () => {
       height: '100vh',
       backgroundColor: theme.colors.background,
       overflow: 'hidden',
-      userSelect: isDragging.current ? 'none' : 'auto'
+      userSelect: isDraggingForRender ? 'none' : 'auto'
     }}>
       {/* Map container */}
       <div style={{

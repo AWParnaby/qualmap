@@ -226,7 +226,7 @@ test.describe('Tablet Responsiveness - iPad', () => {
     await expect(page.locator('.leaflet-container')).toBeVisible();
   });
 
-  test('handles tablet landscape orientation', async ({ page, context }) => {
+  test('handles tablet landscape orientation', async ({ page }) => {
     // iPad in landscape
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.goto('/');

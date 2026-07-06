@@ -21,8 +21,7 @@ export default defineConfig({
         '*.config.js',
         'dist/',
         'e2e/',
-        'src/main.jsx',
-        'src/App.jsx'
+        'src/main.jsx'
       ],
       thresholds: {
         lines: 60,

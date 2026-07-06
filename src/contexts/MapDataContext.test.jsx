@@ -31,20 +31,7 @@ vi.mock('papaparse', () => ({
 }));
 
 describe('MapDataContext Reducer', () => {
-  let initialState;
-
   beforeEach(() => {
-    initialState = {
-      dataState: {},
-      postcodeGeoJSON: null,
-      selectedAreas: [],
-      focusedArea: null,
-      dataLoaded: false,
-      showKeyboardHelp: false,
-      activeTab: 'selections',
-      selectedNgram: null,
-      ngramData: null,
-    };
     vi.clearAllMocks();
   });
 
@@ -60,11 +47,6 @@ describe('MapDataContext Reducer', () => {
       await waitFor(() => {
         expect(result.current.state.dataLoaded).toBe(true);
       });
-
-      const testData = {
-        servicesData: [{ name: 'Test Service' }],
-        feedbackData: [{ text: 'Test Feedback' }]
-      };
 
       // The reducer doesn't expose a way to dispatch directly, but we can test
       // that the state structure is correct

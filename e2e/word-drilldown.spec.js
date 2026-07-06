@@ -174,10 +174,6 @@ test.describe('Word Cloud Drilldown Workflow', () => {
       await wordCloudButton.first().click();
       await page.waitForTimeout(1000);
 
-      // Get current word count
-      const initialWords = page.locator('[data-testid^="word-"]');
-      const initialCount = await initialWords.count();
-
       // Go back to selections panel
       const selectionsButton = page.locator('button', { hasText: /Selected Areas/i }).first();
       await selectionsButton.click();

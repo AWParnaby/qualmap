@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { renderWithContext } from '@test/utils/renderWithContext';
 import WordCloudPanel from './WordCloudPanel';
 
 // Mock react-tagcloud
 vi.mock('react-tagcloud', () => ({
-  TagCloud: ({ tags, onClick, minSize, maxSize, ...props }) => (
+  TagCloud: ({ tags, onClick, minSize: _minSize, maxSize: _maxSize, ...props }) => (
     <div data-testid="tag-cloud" data-tag-count={tags.length} {...props}>
       {tags && tags.map((tag, idx) => (
         <span
@@ -160,7 +159,6 @@ describe('WordCloudPanel', () => {
 
   describe('Word Click Handling', () => {
     it('handles word click and sets selected ngram', async () => {
-      const user = userEvent.setup();
       renderWithContext(<WordCloudPanel />);
 
       await waitFor(() => {
